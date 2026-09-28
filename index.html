@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniGastos - Gestión Financiera para Universitarios</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+
+    <header class="bg-indigo-600 shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2.5 rounded-xl text-white backdrop-blur-sm">
+                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-tight">UniGastos</h1>
+                    <p class="text-xs text-indigo-200">Control Financiero Universitario</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openBudgetModal()" class="bg-indigo-500 hover:bg-indigo-400 text-white px-3.5 py-2 rounded-xl text-sm font-medium transition shadow-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-gear"></i>
+                    <span class="hidden sm:inline">Definir Presupuesto</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- Financial Summary Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Card: Presupuesto Mensual -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center justify-between transition hover:shadow-md">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Presupuesto Mensual</p>
+                    <h2 id="displayBudget" class="text-3xl font-bold text-slate-900 mt-1">$0.00</h2>
+                    <span class="text-xs text-slate-400 mt-1 block">Límite establecido para este mes</span>
+                </div>
+                <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                    <i class="fa-solid fa-wallet text-xl"></i>
+                </div>
+            </div>
+
+            <!-- Card: Total Gastado -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center justify-between transition hover:shadow-md">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Gastado</p>
+                    <h2 id="displaySpent" class="text-3xl font-bold text-slate-900 mt-1">$0.00</h2>
+                    <span class="text-xs text-slate-400 mt-1 block">Acumulado del mes actual</span>
+                </div>
+                <div class="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
+                    <i class="fa-solid fa-receipt text-xl"></i>
+                </div>
+            </div>
+
+            <!-- Card: Dinero Restante -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center justify-between transition hover:shadow-md">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Dinero Restante</p>
+                    <h2 id="displayRemaining" class="text-3xl font-bold text-slate-900 mt-1">$0.00</h2>
+                    <span id="remainingSubtitle" class="text-xs text-emerald-600 mt-1 block font-medium">Disponible para gastar</span>
+                </div>
+                <div id="remainingIconContainer" class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 transition-colors">
+                    <i id="remainingIcon" class="fa-solid fa-piggy-bank text-xl"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress Bar Section -->
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-semibold text-slate-700">Progreso del Presupuesto</span>
+                <span id="progressPercentage" class="text-sm font-bold text-indigo-600">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="progressBar" class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p id="budgetWarning" class="text-xs text-slate-500 hidden items-center space-x-1.5 pt-1">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                <span id="warningText">¡Atención! Estás cerca de alcanzar tu límite mensual.</span>
+            </p>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Add Expense Form & Categories Totals -->
+            <div class="lg:col-span-1 space-y-8">
+                
+                <!-- Expense Form Card -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-6">
+                    <div class="flex items-center space-x-3 pb-4 border-b border-slate-100">
+                        <div class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-plus text-sm"></i>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-900">Nuevo Gasto</h2>
+                    </div>
+
+                    <form id="expenseForm" onsubmit="addExpense(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Categoría</label>
+                            <select id="expenseCategory" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                                <option value="" disabled selected>Selecciona una categoría</option>
+                                <option value="Comida">Comida & Cafetería</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Copias y Materiales">Copias y Materiales</option>
+                                <option value="Tecnología">Tecnología & Software</option>
+                                <option value="Ocio">Ocio & Social</option>
+                                <option value="Imprevistos">Imprevistos</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Monto ($)</label>
+                            <input type="number" id="expenseAmount" step="0.01" min="0.01" placeholder="0.00" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Fecha</label>
+                            <input type="date" id="expenseDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Nota (Opcional)</label>
+                            <input type="text" id="expenseNote" placeholder="Ej. Almuerzo con amigos, fotocopias cálculo..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        </div>
+
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl shadow-sm hover:shadow transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-circle-plus"></i>
+                            <span>Registrar Gasto</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Category Breakdown Card -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
+                    <h2 class="text-lg font-semibold text-slate-900 pb-2 border-b border-slate-100">Gastos por Categoría</h2>
+                    <div id="categoryTotalsList" class="space-y-3">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: History & Details -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-6 flex flex-col h-full">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-slate-100 gap-4">
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-900">Historial de Gastos Recientes</h2>
+                            <p class="text-xs text-slate-400">Todos tus movimientos registrados en el mes</p>
+                        </div>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <select id="filterCategory" onchange="renderApp()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition w-full sm:w-auto">
+                                <option value="Todas">Todas las categorías</option>
+                                <option value="Comida">Comida</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Copias y Materiales">Copias y Materiales</option>
+                                <option value="Tecnología">Tecnología</option>
+                                <option value="Ocio">Ocio</option>
+                                <option value="Imprevistos">Imprevistos</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Expenses List Container -->
+                    <div id="expensesContainer" class="space-y-3 overflow-y-auto max-h-[600px] pr-1">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Budget Setup Modal -->
+    <div id="budgetModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-6 border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="text-lg font-semibold text-slate-900">Configurar Presupuesto Mensual</h3>
+                <button onclick="closeBudgetModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="saveBudget(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Nuevo Límite de Presupuesto ($)</label>
+                    <input type="number" id="modalBudgetInput" step="0.01" min="1" placeholder="Ej. 3500.00" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeBudgetModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl shadow-sm transition">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        // Category configuration with icons and colors
+        const categoryConfig = {
+            "Comida": { icon: "fa-utensils", bg: "bg-amber-50", text: "text-amber-600", badge: "bg-amber-100 text-amber-700" },
+            "Transporte": { icon: "fa-bus", bg: "bg-sky-50", text: "text-sky-600", badge: "bg-sky-100 text-sky-700" },
+            "Copias y Materiales": { icon: "fa-book-open", bg: "bg-purple-50", text: "text-purple-600", badge: "bg-purple-100 text-purple-700" },
+            "Tecnología": { icon: "fa-laptop-code", bg: "bg-emerald-50", text: "text-emerald-600", badge: "bg-emerald-100 text-emerald-700" },
+            "Ocio": { icon: "fa-champagne-glasses", bg: "bg-pink-50", text: "text-pink-600", badge: "bg-pink-100 text-pink-700" },
+            "Imprevistos": { icon: "fa-kit-medical", bg: "bg-rose-50", text: "text-rose-600", badge: "bg-rose-100 text-rose-700" }
+        };
+
+        // State Management
+        let appState = {
+            budget: 0,
+            expenses: []
+        };
+
+        // Initialize App on Load
+        window.onload = function() {
+            loadFromLocalStorage();
+            
+            // Set default date to today in the expense form
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseDate').value = today;
+
+            renderApp();
+        };
+
+        // Local Storage Functions
+        function saveToLocalStorage() {
+            localStorage.setItem('uniGastosState', JSON.stringify(appState));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('uniGastosState');
+            if (saved) {
+                try {
+                    appState = JSON.parse(saved);
+                } catch (e) {
+                    console.error("Error loading local storage:", e);
+                }
+            }
+        }
+
+        // Modal Controls
+        function openBudgetModal() {
+            document.getElementById('modalBudgetInput').value = appState.budget || '';
+            document.getElementById('budgetModal').classList.remove('hidden');
+        }
+
+        function closeBudgetModal() {
+            document.getElementById('budgetModal').classList.add('hidden');
+        }
+
+        function saveBudget(event) {
+            event.preventDefault();
+            const val = parseFloat(document.getElementById('modalBudgetInput').value);
+            if (!isNaN(val) && val >= 0) {
+                appState.budget = val;
+                saveToLocalStorage();
+                renderApp();
+                closeBudgetModal();
+                showToast("Presupuesto actualizado correctamente", "success");
+            }
+        }
+
+        // Add Expense Handler
+        function addExpense(event) {
+            event.preventDefault();
+            const category = document.getElementById('expenseCategory').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const date = document.getElementById('expenseDate').value;
+            const note = document.getElementById('expenseNote').value.trim();
+
+            if (!category || isNaN(amount) || amount <= 0 || !date) {
+                showToast("Por favor completa los campos requeridos correctamente.", "error");
+                return;
+            }
+
+            const newExpense = {
+                id: Date.now().toString(),
+                category,
+                amount,
+                date,
+                note: note || category
+            };
+
+            appState.expenses.unshift(newExpense);
+            saveToLocalStorage();
+            renderApp();
+
+            // Reset specific fields
+            document.getElementById('expenseAmount').value = '';
+            document.getElementById('expenseNote').value = '';
+            document.getElementById('expenseCategory').selectedIndex = 0;
+
+            showToast("Gasto registrado con éxito", "success");
+        }
+
+        // Delete Expense Handler
+        function deleteExpense(id) {
+            appState.expenses = appState.expenses.filter(exp => exp.id !== id);
+            saveToLocalStorage();
+            renderApp();
+            showToast("Gasto eliminado", "info");
+        }
+
+        // Main App Render Function
+        function renderApp() {
+            const budget = appState.budget || 0;
+            const totalSpent = appState.expenses.reduce((sum, item) => sum + item.amount, 0);
+            const remaining = budget - totalSpent;
+            const percentage = budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0;
+            const exactPercentage = budget > 0 ? (totalSpent / budget) * 100 : 0;
+
+            // Update Summary Cards
+            document.getElementById('displayBudget').innerText = formatCurrency(budget);
+            document.getElementById('displaySpent').innerText = formatCurrency(totalSpent);
+            
+            const displayRemaining = document.getElementById('displayRemaining');
+            const remainingSubtitle = document.getElementById('remainingSubtitle');
+            const remainingIconContainer = document.getElementById('remainingIconContainer');
+            const remainingIcon = document.getElementById('remainingIcon');
+
+            displayRemaining.innerText = formatCurrency(remaining);
+
+            if (remaining < 0) {
+                displayRemaining.className = "text-3xl font-bold text-rose-600 mt-1";
+                remainingSubtitle.innerText = "¡Presupuesto excedido!";
+                remainingSubtitle.className = "text-xs text-rose-600 mt-1 block font-medium";
+                remainingIconContainer.className = "w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 transition-colors";
+                remainingIcon.className = "fa-solid fa-triangle-exclamation text-xl";
+            } else {
+                displayRemaining.className = "text-3xl font-bold text-slate-900 mt-1";
+                remainingSubtitle.innerText = "Disponible para gastar";
+                remainingSubtitle.className = "text-xs text-emerald-600 mt-1 block font-medium";
+                remainingIconContainer.className = "w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 transition-colors";
+                remainingIcon.className = "fa-solid fa-piggy-bank text-xl";
+            }
+
+            // Update Progress Bar
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const budgetWarning = document.getElementById('budgetWarning');
+            const warningText = document.getElementById('warningText');
+
+            progressBar.style.width = `${Math.min(exactPercentage, 100)}%`;
+            progressPercentage.innerText = `${Math.round(exactPercentage)}%`;
+
+            if (exactPercentage >= 100) {
+                progressBar.className = "bg-rose-600 h-3 rounded-full transition-all duration-500";
+                progressPercentage.className = "text-sm font-bold text-rose-600";
+                budgetWarning.classList.remove('hidden');
+                budgetWarning.classList.add('flex');
+                warningText.innerText = "¡Has superado el presupuesto mensual establecido!";
+            } else if (exactPercentage >= 80) {
+                progressBar.className = "bg-amber-500 h-3 rounded-full transition-all duration-500";
+                progressPercentage.className = "text-sm font-bold text-amber-500";
+                budgetWarning.classList.remove('hidden');
+                budgetWarning.classList.add('flex');
+                warningText.innerText = "¡Atención! Estás cerca de alcanzar tu límite mensual (más del 80%).";
+            } else {
+                progressBar.className = "bg-indigo-600 h-3 rounded-full transition-all duration-500";
+                progressPercentage.className = "text-sm font-bold text-indigo-600";
+                budgetWarning.classList.add('hidden');
+                budgetWarning.classList.remove('flex');
+            }
+
+            // Render Category Totals & Breakdown
+            renderCategoryTotals(totalSpent);
+
+            // Render Expenses Filtered List
+            renderExpensesList();
+        }
+
+        function renderCategoryTotals(totalSpent) {
+            const container = document.getElementById('categoryTotalsList');
+            container.innerHTML = '';
+
+            const categories = Object.keys(categoryConfig);
+            const totals = {};
+
+            categories.forEach(cat => totals[cat] = 0);
+            appState.expenses.forEach(exp => {
+                if (totals[exp.category] !== undefined) {
+                    totals[exp.category] += exp.amount;
+                }
+            });
+
+            categories.forEach(cat => {
+                const amount = totals[cat];
+                const config = categoryConfig[cat];
+                const share = totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0;
+
+                const itemHTML = `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 ${config.bg} ${config.text} rounded-lg flex items-center justify-center">
+                                <i class="fa-solid ${config.icon} text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-slate-800">${cat}</h4>
+                                <span class="text-xs text-slate-400">${share}% del total</span>
+                            </div>
+                        </div>
+                        <span class="text-sm font-bold text-slate-700">${formatCurrency(amount)}</span>
+                    </div>
+                `;
+                container.innerHTML += itemHTML;
+            });
+        }
+
+        function renderExpensesList() {
+            const container = document.getElementById('expensesContainer');
+            const filter = document.getElementById('filterCategory').value;
+
+            let filtered = appState.expenses;
+            if (filter !== 'Todas') {
+                filtered = appState.expenses.filter(exp => exp.category === filter);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 space-y-3 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                        <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto text-lg">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-600">No hay gastos registrados</p>
+                        <p class="text-xs text-slate-400 max-w-xs mx-auto">Usa el formulario de la izquierda para empezar a registrar tus gastos universitarios.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(exp => {
+                const config = categoryConfig[exp.category] || { icon: "fa-tag", bg: "bg-slate-50", text: "text-slate-600", badge: "bg-slate-100 text-slate-700" };
+                const formattedDate = formatDate(exp.date);
+
+                const cardHTML = `
+                    <div class="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/70 rounded-2xl transition border border-slate-100/80 group">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 ${config.bg} ${config.text} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                                <i class="fa-solid ${config.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h4 class="text-sm font-semibold text-slate-800">${escapeHTML(exp.note)}</h4>
+                                </div>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <span class="text-xs px-2 py-0.5 rounded-md font-medium ${config.badge}">${exp.category}</span>
+                                    <span class="text-xs text-slate-400"><i class="fa-regular fa-calendar mr-1"></i>${formattedDate}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-base font-bold text-slate-900">-${formatCurrency(exp.amount)}</span>
+                            <button onclick="deleteExpense('${exp.id}')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition" title="Eliminar gasto">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        // Utility Functions
+        function formatCurrency(amount) {
+            return '$' + amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDate(dateString) {
+            const parts = dateString.split('-');
+            if (parts.length !== 3) return dateString;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bgColors = "bg-slate-900 text-white";
+            let icon = "fa-circle-check text-emerald-400";
+            if (type === 'error') {
+                bgColors = "bg-rose-600 text-white";
+                icon = "fa-circle-exclamation text-white";
+            } else if (type === 'info') {
+                bgColors = "bg-indigo-600 text-white";
+                icon = "fa-circle-info text-white";
+            }
+
+            toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium ${bgColors} transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
